@@ -45,7 +45,7 @@
 <meta itemprop="description" content="A unique index on a table field, helps developers to ensure that, their table will not have any duplicated values for that field. On the other hand, a soft delete helps us to logically delete a record while keeping the record itself, using a flag field (for example IsDeleted boolean field) in the table. The problems arise when you want to add a record that its unique indexed field value, has been already used in a deleted record.">
 <meta itemprop="datePublished" content="2020-05-08T12:24:37&#43;04:30" />
 <meta itemprop="dateModified" content="2020-05-08T12:24:37&#43;04:30" />
-<meta itemprop="wordCount" content="778">
+<meta itemprop="wordCount" content="777">
 <meta itemprop="image" content="https://mousavi310.github.io/images/jessica-ruscello-DoSDQvzjeH0-unsplash.jpg">
 
 
@@ -181,7 +181,7 @@ The statement has been terminated.
 Microsoft.EntityFrameworkCore.DbUpdateException: An error occurred while updating the entries. See the inner exception for details.
  ---&gt; Microsoft.Data.SqlClient.SqlException (0x80131904): Cannot insert duplicate key row in object 'dbo.Products' with unique index 'IX_Products_Name'. The duplicate key value is (White Shirt).
 </code></pre><h3 id="conclusion">Conclusion</h3>
-<p>In this article, first, I tried to show you how we can add soft deletion to our data models. Then I showed you if we have a unique index, this could cause a problem if we want to add a record that its unique indexed field value, has been already used in a deleted record. Then using <code>Filtered Index</code> I only unique indexed the records that are not soft deleted.</p>
+<p>In this article, first, I tried to show you how we can add soft deletion to our data models. Then I showed you if we have a unique index, this could cause a problem if we want to add a record that its unique indexed field value, has been already used in a deleted record. Then using <code>Filtered Index</code> I only indexed the records that are not soft deleted.</p>
 
                         </div>
                     </div>
