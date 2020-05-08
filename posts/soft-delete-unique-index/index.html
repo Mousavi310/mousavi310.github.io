@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+<title>
+  
+     Unique Index With Soft Delete Support in Entity Framework Core | 
+    Morteza Mousavi
+  
+</title><meta name="author" content="">
+
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180">
+<link rel="icon" href="/favicon-32x32.png " sizes="32x32" type="image/png">
+<link rel="icon" href="/favicon-16x16.png" sizes="16x16" type="image/png">
+<link rel="manifest" href="/manifest.json">
+<link rel="mask-icon" href="/safari-pinned-tab.svg" color="#0c344b">
+<link rel="icon" href="/favicon.ico">
+
+
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.17.1/themes/prism-okaidia.min.css">
+    
+
+
+
+    
+        
+            <link rel="stylesheet" href="/dist/main.37ab3f61b95417873748.min.css">
+        
+    
+
+
+
+
+<link rel="canonical" href="https://mousavi310.github.io/posts/soft-delete-unique-index/"><meta property="og:title" content="Unique Index With Soft Delete Support in Entity Framework Core" />
+<meta property="og:description" content="A unique index on a table field, helps developers to ensure that, their table will not have any duplicated values for that field. On the other hand, a soft delete helps us to logically delete a record while keeping the record itself, using a flag field (for example IsDeleted boolean field) in the table. The problems arise when you want to add a record that its unique indexed field value, has been already used in a deleted record." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://mousavi310.github.io/posts/soft-delete-unique-index/" />
+<meta property="og:image" content="https://mousavi310.github.io/images/jessica-ruscello-DoSDQvzjeH0-unsplash.jpg" />
+<meta property="article:published_time" content="2020-05-08T12:24:37+04:30" />
+<meta property="article:modified_time" content="2020-05-08T12:24:37+04:30" />
+<meta itemprop="name" content="Unique Index With Soft Delete Support in Entity Framework Core">
+<meta itemprop="description" content="A unique index on a table field, helps developers to ensure that, their table will not have any duplicated values for that field. On the other hand, a soft delete helps us to logically delete a record while keeping the record itself, using a flag field (for example IsDeleted boolean field) in the table. The problems arise when you want to add a record that its unique indexed field value, has been already used in a deleted record.">
+<meta itemprop="datePublished" content="2020-05-08T12:24:37&#43;04:30" />
+<meta itemprop="dateModified" content="2020-05-08T12:24:37&#43;04:30" />
+<meta itemprop="wordCount" content="778">
+<meta itemprop="image" content="https://mousavi310.github.io/images/jessica-ruscello-DoSDQvzjeH0-unsplash.jpg">
+
+
+
+<meta itemprop="keywords" content="" /><meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://mousavi310.github.io/images/jessica-ruscello-DoSDQvzjeH0-unsplash.jpg"/>
+
+<meta name="twitter:title" content="Unique Index With Soft Delete Support in Entity Framework Core"/>
+<meta name="twitter:description" content="A unique index on a table field, helps developers to ensure that, their table will not have any duplicated values for that field. On the other hand, a soft delete helps us to logically delete a record while keeping the record itself, using a flag field (for example IsDeleted boolean field) in the table. The problems arise when you want to add a record that its unique indexed field value, has been already used in a deleted record."/>
+
+</head>
+<body>
+    
+<nav class="navbar navbar-expand-md navbar-light bg-light fixed-top shadow-sm" id="navbar-main-menu">
+    <div class="container">
+        <a class="navbar-brand font-weight-bold" href="https://mousavi310.github.io/">Morteza Mousavi</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#main-menu" aria-controls="main-menu" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="main-menu">
+            <ul class="navbar-nav ml-auto">
+                
+                    <li class="nav-item"><a class="nav-link" href="/aboutme/">About Me</a></li>
+                
+            
+            </ul>
+        </div>
+    </div>
+</nav>
+
+
+    
+<main class="content-page container pt-7 pb-5">
+    <div class="row">
+        <div class="col">
+            <article>
+                <div class="row justify-content-center">
+                    <div class="col-lg-8">
+                        <h2 class="mb-3">Unique Index With Soft Delete Support in Entity Framework Core</h2>
+
+                        <div class="content">
+                            <p>A <code>unique index</code> on a table field, helps developers to ensure that, their table will not have any duplicated values for that field. On the other hand, a <code>soft delete</code> helps us to logically delete a record while keeping the record itself, using a flag field (for example <code>IsDeleted</code> boolean field) in the table. The problems arise when you want to add a record that its unique indexed field value, has been already used in a deleted record. Although the record is logically deleted, the unique index is not aware that the record has been deleted (softly) and raise duplication error in response. In this blog post, I want to show how we can solve this issue.</p>
+<h3 id="real-example-in-net-core-31">Real Example in .NET Core 3.1</h3>
+<p>So let&rsquo;s consider an example using <code>ASP.NET Core 3.1 Web API</code> (you can see the full source code in <a href="https://github.com/Mousavi310/dotnet-training/tree/master/SoftDeleteSample">GitHub</a>). Assuming <code>StoreContext</code> is our <code>DbContext</code> and  <code>Product</code> is our entity class:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-csharp" data-lang="csharp"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Product</span>
+{
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">int</span> Id { <span style="color:#66d9ef">get</span>; <span style="color:#66d9ef">set</span>; }
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">string</span> Name { <span style="color:#66d9ef">get</span>; <span style="color:#66d9ef">set</span>; }
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">bool</span> IsDeleted { <span style="color:#66d9ef">get</span>; <span style="color:#66d9ef">set</span>; }
+}
+</code></pre></div><p>To achieve soft deletion and unique index, we must add following configuration to <code>StoreContext</code> class:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-csharp" data-lang="csharp"><span style="color:#66d9ef">protected</span> <span style="color:#66d9ef">override</span> <span style="color:#66d9ef">void</span> OnModelCreating(ModelBuilder modelBuilder)
+{
+    <span style="color:#75715e">//This will make sure we have unique product names
+</span><span style="color:#75715e"></span>    modelBuilder
+        .Entity&lt;Product&gt;()
+        .HasIndex(p =&gt; p.Name)
+        .IsUnique();
+
+    <span style="color:#75715e">//This will exclude products with IsDeleted=1 when querying Products using EF
+</span><span style="color:#75715e"></span>    modelBuilder
+        .Entity&lt;Product&gt;()
+        .HasQueryFilter(p =&gt; !p.IsDeleted);
+}
+</code></pre></div><p>I already created an <code>ProductsController</code> to expose our REST API. So lets create a product named <code>White Shirt</code>:</p>
+<pre><code class="language-curl" data-lang="curl">curl --location --request POST 'https://localhost:5001/api/products' --insecure --header 'Content-Type: application/json' --data-raw '{
+&quot;name&quot;: &quot;White Shirt&quot;
+}'
+
+{&quot;id&quot;:6,&quot;name&quot;:&quot;White Shirt&quot;,&quot;isDeleted&quot;:false}
+</code></pre><p>The product created successfully with <code>Id</code> 6. We can view all products:</p>
+<pre><code class="language-curl" data-lang="curl"> curl --location --request GET 'https://localhost:5001/api/products' --insecure
+
+ [{&quot;id&quot;:6,&quot;name&quot;:&quot;White Shirt&quot;,&quot;isDeleted&quot;:false}]
+</code></pre><p>Let&rsquo;s delete the product:</p>
+<pre><code class="language-curl" data-lang="curl">curl --location --request DELETE 'https://localhost:5001/api/products/6' --insecure
+</code></pre><p>The product successfully deleted. To make sure the product is not shown in our list API, let’s fetch the list of products again:</p>
+<pre><code class="language-curl" data-lang="curl"> curl --location --request GET 'https://localhost:5001/api/products' --insecure
+
+ []
+</code></pre><p>If we retry to add <code>White Shirt</code> again, we will get a    <code>SqlException</code> error:</p>
+<pre><code class="language-curl" data-lang="curl">curl --location --request POST 'https://localhost:5001/api/products' --insecure --header 'Content-Type: application/json' --data-raw '{
+&quot;name&quot;: &quot;White Shirt&quot;
+}'
+
+Microsoft.EntityFrameworkCore.DbUpdateException: An error occurred while updating the entries. See the inner exception for details.
+ ---&gt; Microsoft.Data.SqlClient.SqlException (0x80131904): Cannot insert duplicate key row in object 'dbo.Products' with unique index 'IX_Products_Name'. The duplicate key value is (White Shirt).
+The statement has been terminated.
+   at Microsoft.Data.SqlClient.SqlCommand.&lt;&gt;c.&lt;ExecuteDbDataReaderAsync&gt;b__164_0(Task`1 result)
+   at System.Threading.Tasks.ContinuationResultTaskFromResultTask`2.InnerInvoke()
+   at System.Threading.Tasks.Task.&lt;&gt;c.&lt;.cctor&gt;b__274_0(Object obj)
+   at System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state)
+--- End of stack trace from previous location where exception was thrown ---
+   at System.Threading.Tasks.Task.ExecuteWithThreadLocal(Task&amp; currentTaskSlot, Thread threadPoolThread)
+--- End of stack trace from previous location where exception was thrown ---
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.ReaderModificationCommandBatch.ExecuteAsync(IRelationalConnection connection, CancellationToken cancellationToken)
+</code></pre><p>Indicating that <code>White Shirt</code> is already inserted and <code>IX_Products_Name</code> unique index prevents that.</p>
+<h3 id="use-filter-index-to-rescue">Use Filter Index to Rescue</h3>
+<p>SQL Server 2008 introduced <a href="https://docs.microsoft.com/en-us/sql/relational-databases/indexes/create-filtered-indexes">filtered index</a> feature which allows us to have an index with conditions. We have only one condition: <code>IsDeleted = 0</code>; we want to index all not deleted records and make sure only not deleted records are unique. To achieve this in Entity Framework Core, add <code>HasFilter(&quot;IsDeleted = 0&quot;)</code> to <code>StoreContext</code> configuration:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-csharp" data-lang="csharp"><span style="color:#66d9ef">protected</span> <span style="color:#66d9ef">override</span> <span style="color:#66d9ef">void</span> OnModelCreating(ModelBuilder modelBuilder)
+{
+    <span style="color:#75715e">//This will make sure we have unique product names
+</span><span style="color:#75715e"></span>    modelBuilder
+        .Entity&lt;Product&gt;()
+        .HasIndex(p =&gt; p.Name)
+        <span style="color:#75715e">//This make index filtered
+</span><span style="color:#75715e"></span>        .HasFilter(<span style="color:#e6db74">&#34;IsDeleted = 0&#34;</span>)
+        .IsUnique();
+
+    <span style="color:#75715e">//This will exclude products with IsDeleted=1 when querying Products using EF
+</span><span style="color:#75715e"></span>    modelBuilder
+        .Entity&lt;Product&gt;()
+        .HasQueryFilter(p =&gt; !p.IsDeleted);
+}
+</code></pre></div><p>Migrate your database and test it again by adding <code>White Shirt</code> product:</p>
+<pre><code class="language-curl" data-lang="curl">curl --location --request POST 'https://localhost:5001/api/products' --insecure --header 'Content-Type: application/json' --data-raw '{
+&quot;name&quot;: &quot;White Shirt&quot;
+}'
+
+{&quot;id&quot;:8,&quot;name&quot;:&quot;White Shirt&quot;,&quot;isDeleted&quot;:false}
+</code></pre><p>As you see above the product created with <code>Id</code> 8. We can see it in the list API:</p>
+<pre><code class="language-curl" data-lang="curl"> curl --location --request GET 'https://localhost:5001/api/products' --insecure
+
+ [{&quot;id&quot;:8,&quot;name&quot;:&quot;White Shirt&quot;,&quot;isDeleted&quot;:false}]
+</code></pre><p>If you want to add <code>White Shirt</code> product while it is not (soft) deleted, the filter index prevents it:</p>
+<pre><code class="language-curl" data-lang="curl">curl --location --request POST 'https://localhost:5001/api/products' --insecure --header 'Content-Type: application/json' --data-raw '{
+&quot;name&quot;: &quot;White Shirt&quot;
+}'
+
+Microsoft.EntityFrameworkCore.DbUpdateException: An error occurred while updating the entries. See the inner exception for details.
+ ---&gt; Microsoft.Data.SqlClient.SqlException (0x80131904): Cannot insert duplicate key row in object 'dbo.Products' with unique index 'IX_Products_Name'. The duplicate key value is (White Shirt).
+</code></pre><h3 id="conclusion">Conclusion</h3>
+<p>In this article, first, I tried to show you how we can add soft deletion to our data models. Then I showed you if we have a unique index, this could cause a problem if we want to add a record that its unique indexed field value, has been already used in a deleted record. Then using <code>Filtered Index</code> I only unique indexed the records that are not soft deleted.</p>
+
+                        </div>
+                    </div>
+                </div>
+            </article>
+        </div>
+    </div>
+</main>
+
+
+    <footer class="footer text-center bg-dark py-6">
+    <div class="container">
+        <div class="row">
+            <div class="col">
+                <ul class="list-inline">
+                    
+                </ul>
+
+                <p class="text-muted">
+                    
+                        Copyright &copy; Morteza Mousavi 2020
+                    
+                </p>
+
+                <p class="text-muted">
+                Powered by <a href="https://gohugo.io" target="_blank">Hugo</a> with <a href="https://github.com/puresyntax71/hugo-theme-chunky-poster" target="_blank">Chunky Poster</a>.
+                </p>
+            </div>
+        </div>
+    </div>
+</footer>
+
+    
+    
+        
+            <script src="/dist/main.d608eadfe5ac0688902e.min.js"></script>
+        
+    
+
+
+
+<script>
+    window.Prism = window.Prism || {};
+    window.Prism.manual = true;
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.17.1/components/prism-core.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.17.1/plugins/autoloader/prism-autoloader.min.js"></script>
+
+
+
+
+
+
+    
+</body>
+</html>

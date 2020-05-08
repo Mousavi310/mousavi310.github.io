@@ -59,7 +59,7 @@
         <div class="collapse navbar-collapse" id="main-menu">
             <ul class="navbar-nav ml-auto">
                 
-                    <li class="nav-item"><a class="nav-link" href="/aboutme/">about me</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/aboutme/">About Me</a></li>
                 
             
             </ul>
@@ -77,20 +77,35 @@
 
     
         <div class="latest row py-lg-5">
-            <div class="col-lg-6 mb-3"><a href="/posts/my-first-post/" class="d-block">
-                                <img data-src="/images/jaromir-kavan-vv-oEGlN-4E-unsplash_hu8c6eeeb8f815778944611b8d2a0fb717_665625_700x450_fill_q75_box_smart1.jpg" class="img-fluid rounded" alt="My First Post">
+            <div class="col-lg-6 mb-3"><a href="/posts/soft-delete-unique-index/" class="d-block">
+                                <img data-src="/images/jessica-ruscello-DoSDQvzjeH0-unsplash_hu331e0e8237125ba9a3a419ffa78b9680_345055_700x450_fill_q75_box_smart1.jpg" class="img-fluid rounded" alt="Unique Index With Soft Delete Support in Entity Framework Core">
                             </a></div>
             <div class="col-lg-6 mb-3">
-                <h5 class="created text-muted text-uppercase font-weight-bold">May 2, 2020</h5>
-                <h2><a href="/posts/my-first-post/">My First Post</a></h2>
+                <h5 class="created text-muted text-uppercase font-weight-bold">May 8, 2020</h5>
+                <h2><a href="/posts/soft-delete-unique-index/">Unique Index With Soft Delete Support in Entity Framework Core</a></h2>
 
                 <div class="content">
-                    Hi, All. I already published several posts in my medium but I think for some posts that are short and can help some people this is the right place to start.
-The area of my posts is not restrict enough but at the beginning I think it is a good Idea to share some of my new understanding in ASP.NET Core with you.
+                    A unique index on a table field, helps developers to ensure that, their table will not have any duplicated values for that field. On the other hand, a soft delete helps us to logically delete a record while keeping the record itself, using a flag field (for example IsDeleted boolean field) in the table. The problems arise when you want to add a record that its unique indexed field value, has been already used in a deleted record.
                 </div>
             </div>
         </div>
     <div class="articles row row-cols-1 row-cols-lg-3">
+        
+            <div class="col mb-3">
+                <div class="card h-100">
+    
+    <a href="/posts/my-first-post/" class="d-block"><img data-src="/images/jaromir-kavan-vv-oEGlN-4E-unsplash_hu8c6eeeb8f815778944611b8d2a0fb717_665625_700x350_resize_q75_box.jpg" class="card-img-top mx-auto d-block" alt="Hello Blogging!"><div class="card-body">
+            <h4 class="card-title">Hello Blogging!</h4>
+            <p class="card-text text-muted text-uppercase">May 2, 2020</p>
+            <div class="card-text">
+                Hi, All. I already published several posts in my medium but I think for some posts that are short and can help some people this is the right place to start.
+The area of my posts is not restrict enough but at the beginning I think it is a good Idea to share some of my new understanding in ASP.NET Core with you.
+            </div>
+        </div>
+    </a>
+</div>
+
+            </div>
         
     </div>
 </main>

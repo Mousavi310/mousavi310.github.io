@@ -12,17 +12,27 @@
     
     
     <item>
+      <title>Unique Index With Soft Delete Support in Entity Framework Core</title>
+      <link>https://mousavi310.github.io/posts/soft-delete-unique-index/</link>
+      <pubDate>Fri, 08 May 2020 12:24:37 +0430</pubDate>
+      
+      <guid>https://mousavi310.github.io/posts/soft-delete-unique-index/</guid>
+      <description>A unique index on a table field, helps developers to ensure that, their table will not have any duplicated values for that field. On the other hand, a soft delete helps us to logically delete a record while keeping the record itself, using a flag field (for example IsDeleted boolean field) in the table. The problems arise when you want to add a record that its unique indexed field value, has been already used in a deleted record.</description>
+    </item>
+    
+    <item>
       <title>About Me</title>
       <link>https://mousavi310.github.io/aboutme/</link>
       <pubDate>Sat, 02 May 2020 23:05:23 +0430</pubDate>
       
       <guid>https://mousavi310.github.io/aboutme/</guid>
-      <description>Hi, My name is Seyed Morteza Mousavi. I am a senior ASP.NET Core developer. You can find me on
+      <description>Hi, My name is Seyed Morteza Mousavi. I am a senior ASP.NET Core developer.
+You can find me on
  LinkedIn StackOverflow Github Medium  You can contact me using mousavi310@gmail.com.</description>
     </item>
     
     <item>
-      <title>My First Post</title>
+      <title>Hello Blogging!</title>
       <link>https://mousavi310.github.io/posts/my-first-post/</link>
       <pubDate>Sat, 02 May 2020 15:55:34 +0430</pubDate>
       
