@@ -6,7 +6,7 @@
     <description>Recent content on Morteza Mousavi</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Sat, 02 May 2020 23:05:23 +0430</lastBuildDate>
+    <lastBuildDate>Fri, 08 May 2020 12:24:37 +0430</lastBuildDate>
     
 	<atom:link href="https://mousavi310.github.io/index.xml" rel="self" type="application/rss+xml" />
     
@@ -18,27 +18,6 @@
       
       <guid>https://mousavi310.github.io/posts/soft-delete-unique-index/</guid>
       <description>A unique index on a table field, helps developers to ensure that, their table will not have any duplicated values for that field. On the other hand, a soft delete helps us to logically delete a record while keeping the record itself, using a flag field (for example IsDeleted boolean field) in the table. The problems arise when you want to add a record that its unique indexed field value, has been already used in a deleted record.</description>
-    </item>
-    
-    <item>
-      <title>About Me</title>
-      <link>https://mousavi310.github.io/aboutme/</link>
-      <pubDate>Sat, 02 May 2020 23:05:23 +0430</pubDate>
-      
-      <guid>https://mousavi310.github.io/aboutme/</guid>
-      <description>Hi, My name is Seyed Morteza Mousavi. I am a senior ASP.NET Core developer.
-You can find me on
- LinkedIn StackOverflow Github Medium  You can contact me using mousavi310@gmail.com.</description>
-    </item>
-    
-    <item>
-      <title>Hello Blogging!</title>
-      <link>https://mousavi310.github.io/posts/my-first-post/</link>
-      <pubDate>Sat, 02 May 2020 15:55:34 +0430</pubDate>
-      
-      <guid>https://mousavi310.github.io/posts/my-first-post/</guid>
-      <description>Hi, All. I already published several posts in my medium but I think for some posts that are short and can help some people this is the right place to start.
-The area of my posts is not restrict enough but at the beginning I think it is a good Idea to share some of my new understanding in ASP.NET Core with you.</description>
     </item>
     
   </channel>
