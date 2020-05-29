@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+<title>
+  
+     A Refreshable SQL Server Configuration Provider for .NET Core | 
+    Morteza Mousavi
+  
+</title><meta name="author" content="">
+
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180">
+<link rel="icon" href="/favicon-32x32.png " sizes="32x32" type="image/png">
+<link rel="icon" href="/favicon-16x16.png" sizes="16x16" type="image/png">
+<link rel="manifest" href="/manifest.json">
+<link rel="mask-icon" href="/safari-pinned-tab.svg" color="#0c344b">
+<link rel="icon" href="/favicon.ico">
+
+
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.17.1/themes/prism-okaidia.min.css">
+    
+
+
+
+    
+        
+            <link rel="stylesheet" href="/dist/main.37ab3f61b95417873748.min.css">
+        
+    
+
+
+
+
+<link rel="canonical" href="https://mousavi310.github.io/posts/a-refreshable-sql-server-configuration-provider-for-net-core/"><meta property="og:title" content="A Refreshable SQL Server Configuration Provider for .NET Core" />
+<meta property="og:description" content="As you know you, there are already configuration providers for a variety of sources. ‌But if you didn&rsquo;t find your source configuration provider, you can simply implement it. It just takes a few minutes to implement a configuration provider. In this blog post, I want to show you how you can implement a custom SQL Server configuration provider and more importantly how you can refresh the configuration data whenever your data in the database changes." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://mousavi310.github.io/posts/a-refreshable-sql-server-configuration-provider-for-net-core/" />
+<meta property="og:image" content="https://mousavi310.github.io/images/alexander-andrews-MrCetm-g5n4-unsplash.jpg" />
+<meta property="article:published_time" content="2020-05-22T00:04:09+04:30" />
+<meta property="article:modified_time" content="2020-05-22T00:04:09+04:30" />
+<meta itemprop="name" content="A Refreshable SQL Server Configuration Provider for .NET Core">
+<meta itemprop="description" content="As you know you, there are already configuration providers for a variety of sources. ‌But if you didn&rsquo;t find your source configuration provider, you can simply implement it. It just takes a few minutes to implement a configuration provider. In this blog post, I want to show you how you can implement a custom SQL Server configuration provider and more importantly how you can refresh the configuration data whenever your data in the database changes.">
+<meta itemprop="datePublished" content="2020-05-22T00:04:09&#43;04:30" />
+<meta itemprop="dateModified" content="2020-05-22T00:04:09&#43;04:30" />
+<meta itemprop="wordCount" content="1392">
+<meta itemprop="image" content="https://mousavi310.github.io/images/alexander-andrews-MrCetm-g5n4-unsplash.jpg">
+
+
+
+<meta itemprop="keywords" content="" /><meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://mousavi310.github.io/images/alexander-andrews-MrCetm-g5n4-unsplash.jpg"/>
+
+<meta name="twitter:title" content="A Refreshable SQL Server Configuration Provider for .NET Core"/>
+<meta name="twitter:description" content="As you know you, there are already configuration providers for a variety of sources. ‌But if you didn&rsquo;t find your source configuration provider, you can simply implement it. It just takes a few minutes to implement a configuration provider. In this blog post, I want to show you how you can implement a custom SQL Server configuration provider and more importantly how you can refresh the configuration data whenever your data in the database changes."/>
+
+</head>
+<body>
+    
+<nav class="navbar navbar-expand-md navbar-light bg-light fixed-top shadow-sm" id="navbar-main-menu">
+    <div class="container">
+        <a class="navbar-brand font-weight-bold" href="https://mousavi310.github.io/">Morteza Mousavi</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#main-menu" aria-controls="main-menu" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="main-menu">
+            <ul class="navbar-nav ml-auto">
+                
+                    <li class="nav-item"><a class="nav-link" href="/aboutme/">About Me</a></li>
+                
+            
+            </ul>
+        </div>
+    </div>
+</nav>
+
+
+    
+<main class="content-page container pt-7 pb-5">
+    <div class="row">
+        <div class="col">
+            <article>
+                <div class="row justify-content-center">
+                    <div class="col-lg-8">
+                        <h2 class="mb-3">A Refreshable SQL Server Configuration Provider for .NET Core</h2>
+
+                        <div class="content">
+                            <p>As you know you, there are already <a href="https://docs.microsoft.com/en-us/aspnet/core/fundamentals/configuration/?view=aspnetcore-2.2#custom-configuration-provider">configuration providers</a> for a variety of sources. ‌But if you didn&rsquo;t find your source configuration provider, you can simply implement it. It just takes a few minutes to implement a configuration provider. In this blog post, I want to show you how you can implement a custom SQL Server configuration provider and more importantly how you can refresh the configuration data whenever your data in the database changes.</p>
+<p>This article has two parts. First, you learn how to create your own provider. Then you learn how to reload the configuration. The source code is available in <a href="https://github.com/Mousavi310/dotnet-training/tree/master/ConfigurationProviders">GitHub</a>.</p>
+<h2 id="implement-the-sql-server-configuration-provider">Implement the SQL Server Configuration Provider</h2>
+<p>To implement a configuration provider you need to have at least 2 classes: a <strong>configuration source</strong> and  a <strong>configuration provider</strong>. The configuration source has the information about the source (such as the location of the JSON file, or the connection string of the settings table, etc). The configuration provider uses the configuration source to read key/value pair settings from the source and store them in its <code>Data</code> property. <code>Data</code> is a <code>Dictionary&lt;string, string&gt;</code> and your job is to fill it by reading database settings table. Let&rsquo;s begin to create a simple SQL Server Configuration provider by creating a solution:</p>
+<pre><code class="language-dotnet" data-lang="dotnet">mkdir ConfigurationProviders
+cd ConfigurationProviders
+dotnet new sln
+</code></pre><p>Then the provider class library:</p>
+<pre><code class="language-dotnet" data-lang="dotnet">dotnet new classlib -o ConfigurationProviders.SqlServer
+dotnet sln add ConfigurationProviders.SqlServer
+</code></pre><p>To implement provider base classes you must add <code>Microsoft.Extensions.Configuration</code> NuGet package to your project. You also need to add <code>Microsoft.Data.SqlClient</code> package to read data from SQL Server.</p>
+<pre><code class="language-dotnet" data-lang="dotnet">dotnet add .\ConfigurationProviders.SqlServer\ConfigurationProviders.SqlServer.csproj package Microsoft.Data.SqlClient --version 1.1.3
+dotnet add .\ConfigurationProviders.SqlServer\ConfigurationProviders.SqlServer.csproj package Microsoft.Extensions.Configuration --version 3.1.4
+</code></pre><p>To test our provider, I create a <code>Web API</code> sample project:</p>
+<pre><code class="language-dotnet" data-lang="dotnet">dotnet new webapi -o ConfigurationProviders.Samples
+dotnet sln add ConfigurationProviders.Samples
+</code></pre><p>And add a reference to the provider project:</p>
+<pre><code class="language-dotnet" data-lang="dotnet">dotnet add .\ConfigurationProviders.Samples\ConfigurationProviders.Samples.csproj reference .\ConfigurationProviders.SqlServer\ConfigurationProviders.SqlServer.csproj
+</code></pre><p>In the provider project add <code>SqlServerConfigurationSource</code> class that implements <code>IConfigurationSource</code> interface. This is our configuration source which keeps the connection string to the database. Notice <code>IConfigurationSource</code> has a <code>Build</code> method that is used to create an instance of the provider.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-csharp" data-lang="csharp"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">SqlServerConfigurationSource</span> : IConfigurationSource
+{
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">string</span> ConnectionString { <span style="color:#66d9ef">get</span>; <span style="color:#66d9ef">set</span>; }
+    <span style="color:#66d9ef">public</span> IConfigurationProvider Build(IConfigurationBuilder builder)
+    {
+        <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">new</span> SqlServerConfigurationProvider(<span style="color:#66d9ef">this</span>);
+    }
+}
+</code></pre></div><p>Add <code>SqlServerConfigurationProvider</code> class that is responsible for reading data from the database:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-csharp" data-lang="csharp"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">SqlServerConfigurationProvider</span> : ConfigurationProvider
+{
+    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">readonly</span> SqlServerConfigurationSource _source;
+    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">const</span> <span style="color:#66d9ef">string</span> Query = <span style="color:#e6db74">&#34;select [Key], [Value] from Settings&#34;</span>;
+
+    <span style="color:#66d9ef">public</span> SqlServerConfigurationProvider(SqlServerConfigurationSource source)
+    {
+        _source = source;
+    }
+
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">override</span> <span style="color:#66d9ef">void</span> Load()
+    {
+        <span style="color:#66d9ef">var</span> dic = <span style="color:#66d9ef">new</span> Dictionary&lt;<span style="color:#66d9ef">string</span>, <span style="color:#66d9ef">string</span>&gt;();
+        <span style="color:#66d9ef">using</span> (<span style="color:#66d9ef">var</span> connection = <span style="color:#66d9ef">new</span> SqlConnection(_source.ConnectionString))
+        {
+            <span style="color:#66d9ef">var</span> query = <span style="color:#66d9ef">new</span> SqlCommand(Query, connection);
+
+            query.Connection.Open();
+
+            <span style="color:#66d9ef">using</span> (<span style="color:#66d9ef">var</span> reader = query.ExecuteReader())
+            {
+                <span style="color:#66d9ef">while</span> (reader.Read())
+                {
+                    dic.Add(reader[<span style="color:#ae81ff">0</span>].ToString(), reader[<span style="color:#ae81ff">1</span>].ToString());
+                }
+            }
+        }
+
+        Data = dic;
+    }
+}
+</code></pre></div><p>This assumes that we have stored our configuration in <code>Settings</code> table. As you see above we simply read data from <code>Key</code> and <code>Value</code> columns from <code>Settings</code> table and store theme as key/value pairs inside a dictionary. In the end, we store the dictionary in the <code>Data</code> property.</p>
+<p>For convinience in using the provider we add an extension method <code>AddSqlServer</code> which receives a connection string and an <code>IConfigurationBuilder</code> as parameters. This way we can easily add our provider to the builder:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-csharp" data-lang="csharp"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">SqlServerConfigurationBuilderExtensions</span>
+{
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> IConfigurationBuilder AddSqlServer(<span style="color:#66d9ef">this</span> IConfigurationBuilder builder, <span style="color:#66d9ef">string</span> connectionString)
+    {
+        <span style="color:#66d9ef">return</span> builder.Add(<span style="color:#66d9ef">new</span> SqlServerConfigurationSource{ConnectionString = connectionString});
+    }
+}
+</code></pre></div><p>Now let&rsquo;s verify our provider in the <code>Web API</code> project. I want to inject the configuration using <code>Options</code> pattern. Assume that we use an email service and to send emails we need an API key. So we can create the following class:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-csharp" data-lang="csharp"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">EmailServiceOptions</span>
+{
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">string</span> ApiKey { <span style="color:#66d9ef">get</span>; <span style="color:#66d9ef">set</span>; }
+}
+</code></pre></div><p>And configure it in the <code>Startup</code>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-csharp" data-lang="csharp"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> ConfigureServices(IServiceCollection services)
+{
+    services.Configure&lt;EmailServiceOptions&gt;(Configuration.GetSection(<span style="color:#e6db74">&#34;EmailService&#34;</span>));
+    services.AddControllers();
+}
+</code></pre></div><p>And finally add the provider to configuration builder <code>Program.cs</code> file:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-csharp" data-lang="csharp"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> IHostBuilder CreateHostBuilder(<span style="color:#66d9ef">string</span>[] args) =&gt;
+            Host.CreateDefaultBuilder(args)
+                .ConfigureAppConfiguration(builder =&gt;
+                    {
+                        <span style="color:#75715e">//Here we added our configuration provider.
+</span><span style="color:#75715e"></span>                        builder.AddSqlServer(
+                            <span style="color:#e6db74">&#34;Server=localhost;Database=Example;User Id=sa;Password=your(#SecurePassword!123)&#34;</span>);
+                    })
+                .ConfigureWebHostDefaults(webBuilder =&gt;
+                {
+                    webBuilder.UseStartup&lt;Startup&gt;();
+                });
+</code></pre></div><p>To test our configuration I inject <code>IOptions&lt;EmailServiceOptions&gt;</code> in a controller:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-csharp" data-lang="csharp"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">HomeController</span> : ControllerBase
+{
+    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">readonly</span> IOptions&lt;EmailServiceOptions&gt; _options;
+
+    <span style="color:#66d9ef">public</span> HomeController(IOptions&lt;EmailServiceOptions&gt; options)
+    {
+        _options = options;
+    }
+<span style="color:#a6e22e">
+</span><span style="color:#a6e22e">    [Route(&#34;api/email-service/key&#34;)]</span> 
+    <span style="color:#66d9ef">public</span> IActionResult Index()
+    {
+        <span style="color:#66d9ef">return</span> Ok(_options.Value.ApiKey);
+    }
+}
+</code></pre></div><p>Finally insert API key configuration in the <code>Settings</code> table:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">Insert</span> <span style="color:#66d9ef">into</span> Settings([<span style="color:#66d9ef">Key</span>], Value) <span style="color:#66d9ef">Values</span>(<span style="color:#e6db74">&#39;EmailService:ApiKey&#39;</span>, <span style="color:#e6db74">&#39;f08e37a7-af75-49a7-80c3-9ecd7df9ba74&#39;</span>)
+</code></pre></div><p>Let&rsquo;s test the provider by running the sample project:</p>
+<pre><code class="language-dotnet" data-lang="dotnet">dotnet run --project .\ConfigurationProviders.Samples\ConfigurationProviders.Samples.csproj
+</code></pre><p>In another terminal if we curl the API:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl https://localhost:5001/api/email-service/key
+f08e37a7-af75-49a7-80c3-9ecd7df9ba74
+</code></pre></div><p>We can see the configuration is loaded from the SQL Server successfully!</p>
+<p>The configuration works great but if we change a value in the database, the new value is not available in our configuration provider, let&rsquo;s test it:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">Update</span> Settings <span style="color:#66d9ef">Set</span> Value <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;0aaf9ffc-d637-4c40-8a1d-2ff7d73b3b6a&#39;</span> <span style="color:#66d9ef">Where</span> [<span style="color:#66d9ef">Key</span>] <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;EmailService:ApiKey&#39;</span>
+</code></pre></div><p>And check the configuration:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl https://localhost:5001/api/email-service/key
+f08e37a7-af75-49a7-80c3-9ecd7df9ba74
+</code></pre></div><p>As you see we still get the old value. Let&rsquo;s undo it and set the old value for the configuration:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">Update</span> Settings <span style="color:#66d9ef">Set</span> Value <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;f08e37a7-af75-49a7-80c3-9ecd7df9ba74&#39;</span> <span style="color:#66d9ef">Where</span> [<span style="color:#66d9ef">Key</span>] <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;EmailService:ApiKey&#39;</span>
+</code></pre></div><h2 id="reload-configuration">Reload configuration</h2>
+<p>As you know, <code>IOptions&lt;T&gt;</code> does not reload configurations automatically. It just read once from <code>Data</code> and caches it for the entire lifetime of your application. You can use <code>IOptionsSnapshot&lt;T&gt;</code> which reads configuration from <code>Data</code> in each HTTP Request. Even if we use <code>IOptionsSnapshot&lt;T&gt;</code> we know that <code>Data</code> is loaded once. To reload <code>Data</code> we can use something called <code>IChangeToken</code>. Using <code>IChangeToken</code> we can <strong>Watch</strong> something is changed and in the change event of the <code>IChangeToken</code> we can call a callback (here we want to reload our <code>Data</code> from the database by just calling <code>Load</code> method again).</p>
+<p>So let&rsquo;s use <code>IChangeToken</code> in our provider. But first change <code>IOptions&lt;EmailServiceOptions&gt;</code> to <code>IOptionsSnapshot&lt;EmailServiceOptions&gt;</code>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-csharp" data-lang="csharp"><span style="color:#66d9ef">public</span> HomeController(IOptionsSnapshot&lt;EmailServiceOptions&gt; options)
+{
+    _options = options;
+}
+</code></pre></div><p>Now in <code>SqlServerConfigurationProvider</code> class we can use a utility method <code>ChangeToken.OnChange</code> that accepts two delegates. One for creating a change token, and the second one for handling change event raised by that change token:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-csharp" data-lang="csharp"> <span style="color:#66d9ef">public</span> SqlServerConfigurationProvider(SqlServerConfigurationSource source)
+{
+    _source = source;
+
+    <span style="color:#66d9ef">if</span> (_source.SqlServerWatcher != <span style="color:#66d9ef">null</span>)
+    {
+        _changeTokenRegistration = ChangeToken.OnChange(
+            () =&gt; _source.SqlServerWatcher.Watch(),
+            Load
+        );
+    }
+}
+
+</code></pre></div><p>As you see above we defined how a token can be created, and in the second argument, we used <code>Load</code> as a callback method which is called when change token event raised. We define a watcher interface that is responsible for creating a change token:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-csharp" data-lang="csharp"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">SqlServerConfigurationSource</span> : IConfigurationSource
+{
+    <span style="color:#75715e">//...
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">public</span> ISqlServerWatcher SqlServerWatcher { <span style="color:#66d9ef">get</span>; <span style="color:#66d9ef">set</span>; }
+    <span style="color:#75715e">//...
+</span><span style="color:#75715e"></span>}
+</code></pre></div><p><code>ISqlServerWatcher</code> interface has the following declaration:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-csharp" data-lang="csharp"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">interface</span> ISqlServerWatcher : IDisposable
+{
+    IChangeToken Watch();
+}
+</code></pre></div><p>A simple implementation of <code>ISqlServerWatcher</code> is <code>SqlServerPeriodicalWatcher</code>. In <code>SqlServerPeriodicalWatcher</code>, I just fire change event every <code>_refreshInterval</code> interval. This is an easy implementation, but for most scenarios, it&rsquo;s fine:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-csharp" data-lang="csharp"><span style="color:#66d9ef">internal</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">SqlServerPeriodicalWatcher</span> : ISqlServerWatcher
+{
+    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">readonly</span> TimeSpan _refreshInterval;
+    <span style="color:#66d9ef">private</span> IChangeToken _changeToken;
+    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">readonly</span> Timer _timer;
+    <span style="color:#66d9ef">private</span> CancellationTokenSource _cancellationTokenSource;
+
+    <span style="color:#66d9ef">public</span> SqlServerPeriodicalWatcher(TimeSpan refreshInterval)
+    {
+        _refreshInterval = refreshInterval;
+        _timer = <span style="color:#66d9ef">new</span> Timer(Change, <span style="color:#66d9ef">null</span>, TimeSpan.Zero, _refreshInterval);
+    }
+
+    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">void</span> Change(<span style="color:#66d9ef">object</span> state)
+    {
+        _cancellationTokenSource?.Cancel();
+    }
+
+    <span style="color:#66d9ef">public</span> IChangeToken Watch()
+    {
+        _cancellationTokenSource = <span style="color:#66d9ef">new</span> CancellationTokenSource();
+        _changeToken =  <span style="color:#66d9ef">new</span> CancellationChangeToken(_cancellationTokenSource.Token);
+
+        <span style="color:#66d9ef">return</span> _changeToken;
+    }
+
+    <span style="color:#66d9ef">public</span> <span style="color:#66d9ef">void</span> Dispose()
+    {
+        _timer?.Dispose();
+        _cancellationTokenSource?.Dispose();
+    }
+}
+</code></pre></div><p>You can use your own implementation of <code>IChangeToken</code>. In the above example I used a <code>CancellationChangeToken</code> that is already provided by the base library. The <code>CancellationChangeToken</code>, accepts a <code>CancellationToken</code> of a <code>CancellationTokenSource</code> object. When you call <code>Cancel</code> method of the <code>CancellationTokenSource</code>, the change event callback of <code>CancellationChangeToken</code> will be called. I used a timer to call the <code>Cancel</code> method every <code>_refreshInterval</code>. This allow us to call <code>Load</code> every <code>_refreshInterval</code> interval.</p>
+<p>Finally, allow the client set <code>refreshInterval</code> when registering the provider:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-csharp" data-lang="csharp"><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">static</span> IConfigurationBuilder AddSqlServer(<span style="color:#66d9ef">this</span> IConfigurationBuilder builder, 
+            <span style="color:#66d9ef">string</span> connectionString,
+            TimeSpan? refreshInterval = <span style="color:#66d9ef">null</span>)
+{
+    <span style="color:#66d9ef">return</span> builder.Add(<span style="color:#66d9ef">new</span> SqlServerConfigurationSource
+    {
+        ConnectionString = connectionString,
+        SqlServerWatcher = refreshInterval.HasValue ? 
+            <span style="color:#66d9ef">new</span> SqlServerPeriodicalWatcher(refreshInterval.Value) : <span style="color:#66d9ef">null</span> 
+    });
+}
+</code></pre></div><p>No we can use it in our <code>Program.cs</code> file:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-csharp" data-lang="csharp">builder.AddSqlServer(
+                <span style="color:#e6db74">&#34;Server=localhost;Database=Example;User Id=sa;Password=your(#SecurePassword!123)&#34;</span>,
+                TimeSpan.FromSeconds(<span style="color:#ae81ff">5</span>));
+</code></pre></div><p>I told the provider to refresh the configuration data every 5 seconds. Let&rsquo;s run the project:</p>
+<pre><code class="language-dotnet" data-lang="dotnet">dotnet run --project .\ConfigurationProviders.Samples\ConfigurationProviders.Samples.csproj
+</code></pre><p>In another terminal:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl https://localhost:5001/api/email-service/key
+f08e37a7-af75-49a7-80c3-9ecd7df9ba74
+</code></pre></div><p>Let&rsquo;s change the value:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">Update</span> Settings <span style="color:#66d9ef">Set</span> Value <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;0aaf9ffc-d637-4c40-8a1d-2ff7d73b3b6a&#39;</span> <span style="color:#66d9ef">Where</span> [<span style="color:#66d9ef">Key</span>] <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;EmailService:ApiKey&#39;</span>
+</code></pre></div><p>Waits for 5 seconds and then retry:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl https://localhost:5001/api/email-service/key
+0aaf9ffc-d637-4c40-8a1d-2ff7d73b3b6a
+</code></pre></div><p>As you see the configuration reloaded successfully.</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>In this article, I showed you how it is easy to implement your own configuration provider. Then I showed how you can reload the configuration periodically, so you can get the most recent configuration from your data source. Also, I created a simple library that you can check it at <a href="https://github.com/Mousavi310/Mousavi.Extensions.Configuration.SqlServer">Github</a></p>
+
+                        </div>
+                    </div>
+                </div>
+            </article>
+        </div>
+    </div>
+</main>
+
+
+    <footer class="footer text-center bg-dark py-6">
+    <div class="container">
+        <div class="row">
+            <div class="col">
+                <ul class="list-inline">
+                    
+                </ul>
+
+                <p class="text-muted">
+                    
+                        Copyright &copy; Morteza Mousavi 2020
+                    
+                </p>
+
+                <p class="text-muted">
+                Powered by <a href="https://gohugo.io" target="_blank">Hugo</a> with <a href="https://github.com/puresyntax71/hugo-theme-chunky-poster" target="_blank">Chunky Poster</a>.
+                </p>
+            </div>
+        </div>
+    </div>
+</footer>
+
+    
+    
+        
+            <script src="/dist/main.d608eadfe5ac0688902e.min.js"></script>
+        
+    
+
+
+
+<script>
+    window.Prism = window.Prism || {};
+    window.Prism.manual = true;
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.17.1/components/prism-core.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.17.1/plugins/autoloader/prism-autoloader.min.js"></script>
+
+
+
+
+
+
+    
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+	ga('create', 'UA-165926398-1', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+
+</body>
+</html>
